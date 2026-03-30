@@ -2,7 +2,13 @@ const Auth = (() => {
 
   let _unsubscribeAuth = null;
 
-  const FAKE_DOMAIN = '@poolapp.internal';
+  // Dominio usado internamente para cuentas sin email real
+  // Supabase acepta cualquier formato válido de email
+  const FAKE_DOMAIN = '@poolapp.app';
+
+  function isEmail(value) {
+    return value.includes('@');
+  }
 
   function usernameToEmail(username) {
     return `${username.toLowerCase()}${FAKE_DOMAIN}`;
@@ -14,7 +20,6 @@ const Auth = (() => {
       Store.set({ user: session.user });
     }
 
-    // Desuscribir listener anterior si existe para evitar acumulación
     if (_unsubscribeAuth) {
       _unsubscribeAuth();
       _unsubscribeAuth = null;
@@ -35,15 +40,24 @@ const Auth = (() => {
     return session?.user || null;
   }
 
-  async function login(username, password) {
-    const email = usernameToEmail(username);
+  // Acepta usuario o email. Si contiene @ lo trata como email directo.
+  async function login(usernameOrEmail, password) {
+    const email = isEmail(usernameOrEmail)
+      ? usernameOrEmail
+      : usernameToEmail(usernameOrEmail);
+
     const { data, error } = await db.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      // Mensaje más amigable
+      if (error.message?.toLowerCase().includes('invalid login')) {
+        throw new Error('Usuario o contraseña incorrectos');
+      }
+      throw error;
+    }
     return data.user;
   }
 
   async function register(username, password, displayName) {
-    // Validar que el username solo tenga caracteres permitidos
     if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
       throw new Error('El usuario solo puede tener letras, números, puntos, guiones y _');
     }
@@ -57,15 +71,23 @@ const Auth = (() => {
         data: {
           username: username.toLowerCase(),
           full_name: displayName
-        }
+        },
+        // No requiere confirmación de email
+        emailRedirectTo: undefined
       }
     });
 
     if (error) {
-      if (error.message?.toLowerCase().includes('already registered')) {
+      if (error.message?.toLowerCase().includes('already registered') ||
+          error.message?.toLowerCase().includes('user already registered')) {
         throw new Error('Ese usuario ya existe');
       }
       throw error;
+    }
+
+    // Supabase puede devolver user null si requiere confirmación — verificar
+    if (!data.user && !data.session) {
+      throw new Error('No se pudo crear la cuenta. Verifica que la confirmación de email esté desactivada en Supabase.');
     }
 
     return data.user;
@@ -81,7 +103,11 @@ const Auth = (() => {
 
   function currentUsername() {
     const user = currentUser();
-    return user?.user_metadata?.username || user?.email?.replace(FAKE_DOMAIN, '') || '';
+    // Primero metadato, luego extraer del email quitando el dominio fake
+    return user?.user_metadata?.username
+      || user?.email?.replace(FAKE_DOMAIN, '')
+      || user?.email
+      || '';
   }
 
   function requireAuth() {
