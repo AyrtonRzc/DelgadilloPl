@@ -113,28 +113,29 @@ const TournamentsList = (() => {
       openModal('modal-new-tournament');
     });
 
-    document.getElementById('btn-confirm-tournament')?.addEventListener('click', async () => {
+    document.getElementById('btn-confirm-tournament')?.addEventListener('click', function() {
       const errorEl = document.getElementById('tournament-error');
       errorEl.classList.add('hidden');
-      try {
-        const t = await createTournament({
-          name: document.getElementById('t-name').value,
-          gameModeId: document.getElementById('t-game-mode').value,
-          modeType: document.getElementById('t-mode-type').value,
-          venueId: document.getElementById('t-venue').value,
-          entryFee: document.getElementById('t-entry-fee').value,
-          currency: document.getElementById('t-currency').value
-        });
-        closeModal('modal-new-tournament');
-        renderTournaments();
-        renderActiveTournamentBanner();
-        showToast('Torneo creado', 'success');
-        // Ir al torneo directamente
-        window.location.href = `tournament.html?id=${t.id}`;
-      } catch (e) {
-        errorEl.textContent = e.message;
-        errorEl.classList.remove('hidden');
-      }
+      withLoading(this, async () => {
+        try {
+          const t = await createTournament({
+            name: document.getElementById('t-name').value,
+            gameModeId: document.getElementById('t-game-mode').value,
+            modeType: document.getElementById('t-mode-type').value,
+            venueId: document.getElementById('t-venue').value,
+            entryFee: document.getElementById('t-entry-fee').value,
+            currency: 'MXN'
+          });
+          closeModal('modal-new-tournament');
+          renderTournaments();
+          renderActiveTournamentBanner();
+          showToast('Torneo creado', 'success');
+          window.location.href = `tournament.html?id=${t.id}`;
+        } catch (e) {
+          errorEl.textContent = e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
     });
   }
 

@@ -28,24 +28,24 @@ const Prize = (() => {
 
   async function updatePrizePool(tournamentId) {
     const txs = await loadTransactions(tournamentId);
-    const total = txs
-      .filter(t => t.transaction_type !== 'payout')
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
-
+    const total = sumAmounts(txs.filter(t => t.transaction_type !== 'payout'));
     await db.from('tournaments').update({ prize_pool: total }).eq('id', tournamentId);
     return total;
+  }
+
+  // Suma usando centavos enteros para evitar errores de punto flotante
+  function sumAmounts(txs) {
+    return txs.reduce((sum, t) => sum + Math.round((t.amount || 0) * 100), 0) / 100;
   }
 
   function render(tournament, transactions) {
     const currency = tournament.currency || 'MXN';
 
-    // Bote total
-    const total = transactions
-      .filter(t => t.transaction_type !== 'payout')
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
-
     const entries = transactions.filter(t => t.transaction_type === 'entry');
     const reingresses = transactions.filter(t => t.transaction_type === 'reingress');
+
+    // Usar sumAmounts para consistencia y evitar errores de punto flotante
+    const total = sumAmounts(transactions.filter(t => t.transaction_type !== 'payout'));
 
     // Bote total header
     const boteTotal = document.getElementById('bote-total');
@@ -62,8 +62,8 @@ const Prize = (() => {
     // Desglose
     const breakdown = document.getElementById('bote-breakdown');
     if (breakdown) {
-      const entryTotal = entries.reduce((s, t) => s + t.amount, 0);
-      const reingTotal = reingresses.reduce((s, t) => s + t.amount, 0);
+      const entryTotal = sumAmounts(entries);
+      const reingTotal = sumAmounts(reingresses);
       breakdown.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.875rem;">
           <div style="display:flex; justify-content:space-between;">

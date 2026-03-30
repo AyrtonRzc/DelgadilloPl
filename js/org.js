@@ -11,7 +11,9 @@ const Org = (() => {
 
     if (error) { console.error(error); return []; }
 
-    const orgs = (data || []).map(m => ({ ...m.organizations, role: m.role }));
+    const orgs = (data || [])
+      .filter(m => m.organizations)
+      .map(m => ({ ...m.organizations, role: m.role }));
     Store.set({ orgs });
     return orgs;
   }
@@ -44,13 +46,16 @@ const Org = (() => {
   }
 
   async function loadOrgData(orgId) {
-    await Promise.all([
+    const results = await Promise.allSettled([
       loadPlayers(orgId),
       loadTeams(orgId),
       loadVenues(orgId),
       loadGameModes(orgId),
       loadTournaments(orgId)
     ]);
+    results.forEach(r => {
+      if (r.status === 'rejected') console.error('Error cargando datos de org:', r.reason);
+    });
   }
 
   async function loadPlayers(orgId) {

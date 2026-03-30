@@ -73,6 +73,44 @@ const Directory = (() => {
     await Org.loadTeams(org.id);
   }
 
+  // ── VENUES ────────────────────────────────────────────
+
+  async function saveVenue({ id, name, address }) {
+    const org = Store.get().currentOrg;
+    if (!org) throw new Error('Sin organización');
+
+    name = name.trim();
+    if (!name) throw new Error('El nombre es requerido');
+
+    const payload = {
+      org_id: org.id,
+      name,
+      address: address?.trim() || null
+    };
+
+    let result;
+    if (id) {
+      result = await db.from('venues').update(payload).eq('id', id).select().single();
+    } else {
+      result = await db.from('venues').insert(payload).select().single();
+    }
+
+    if (result.error) {
+      if (result.error.code === '23505') throw new Error('Ya existe un lugar con ese nombre');
+      throw result.error;
+    }
+
+    await Org.loadVenues(org.id);
+    return result.data;
+  }
+
+  async function deleteVenue(id) {
+    const { error } = await db.from('venues').delete().eq('id', id);
+    if (error) throw error;
+    const org = Store.get().currentOrg;
+    await Org.loadVenues(org.id);
+  }
+
   // ── RENDER ────────────────────────────────────────────
 
   function renderPlayers() {
@@ -194,11 +232,59 @@ const Directory = (() => {
     openModal('modal-new-team');
   }
 
+  function renderVenues() {
+    const container = document.getElementById('venues-list');
+    if (!container) return;
+    const { venues } = Store.get();
+
+    if (!venues.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📍</div>
+          <div class="empty-state-title">Sin lugares</div>
+          <div class="empty-state-desc">Agrega los lugares donde se juegan los torneos</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = venues.map(v => `
+      <div class="list-item">
+        <div style="font-size:1.25rem; flex-shrink:0;">📍</div>
+        <div class="list-item-info">
+          <div class="list-item-name">${v.name}</div>
+          ${v.address ? `<div class="list-item-sub">${v.address}</div>` : ''}
+        </div>
+        <button class="btn-icon btn-sm" onclick="Directory.openEditVenue('${v.id}')">✏️</button>
+      </div>`).join('');
+  }
+
+  function openNewVenue() {
+    document.getElementById('edit-venue-id').value = '';
+    document.getElementById('venue-name').value = '';
+    document.getElementById('venue-address').value = '';
+    document.getElementById('modal-venue-title').textContent = 'Nuevo lugar';
+    document.getElementById('venue-error').classList.add('hidden');
+    openModal('modal-new-venue');
+  }
+
+  function openEditVenue(id) {
+    const { venues } = Store.get();
+    const v = venues.find(x => x.id === id);
+    if (!v) return;
+    document.getElementById('edit-venue-id').value = v.id;
+    document.getElementById('venue-name').value = v.name;
+    document.getElementById('venue-address').value = v.address || '';
+    document.getElementById('modal-venue-title').textContent = 'Editar lugar';
+    document.getElementById('venue-error').classList.add('hidden');
+    openModal('modal-new-venue');
+  }
+
   function initEvents() {
     document.getElementById('btn-new-player')?.addEventListener('click', openNewPlayer);
     document.getElementById('btn-new-team')?.addEventListener('click', openNewTeam);
+    document.getElementById('btn-new-venue')?.addEventListener('click', openNewVenue);
 
-    document.getElementById('btn-confirm-player')?.addEventListener('click', async () => {
+    document.getElementById('btn-confirm-player')?.addEventListener('click', function() {
       const id = document.getElementById('edit-player-id').value;
       const name = document.getElementById('player-name').value;
       const nickname = document.getElementById('player-nickname').value;
@@ -206,44 +292,69 @@ const Directory = (() => {
       const errorEl = document.getElementById('player-error');
       errorEl.classList.add('hidden');
 
-      try {
-        await savePlayer({ id: id || null, name, nickname, teamId });
-        closeModal('modal-new-player');
-        renderPlayers();
-        showToast('Jugador guardado', 'success');
-      } catch (e) {
-        errorEl.textContent = e.message;
-        errorEl.classList.remove('hidden');
-      }
+      withLoading(this, async () => {
+        try {
+          await savePlayer({ id: id || null, name, nickname, teamId });
+          closeModal('modal-new-player');
+          renderPlayers();
+          showToast('Jugador guardado', 'success');
+        } catch (e) {
+          errorEl.textContent = e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
     });
 
-    document.getElementById('btn-confirm-team')?.addEventListener('click', async () => {
+    document.getElementById('btn-confirm-team')?.addEventListener('click', function() {
       const id = document.getElementById('edit-team-id').value;
       const name = document.getElementById('team-name').value;
       const color = document.getElementById('team-color').value;
       const errorEl = document.getElementById('team-error');
       errorEl.classList.add('hidden');
 
-      try {
-        await saveTeam({ id: id || null, name, color });
-        closeModal('modal-new-team');
-        renderTeams();
-        showToast('Team guardado', 'success');
-      } catch (e) {
-        errorEl.textContent = e.message;
-        errorEl.classList.remove('hidden');
-      }
+      withLoading(this, async () => {
+        try {
+          await saveTeam({ id: id || null, name, color });
+          closeModal('modal-new-team');
+          renderTeams();
+          showToast('Team guardado', 'success');
+        } catch (e) {
+          errorEl.textContent = e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
     });
 
-    // Subtabs directorio
+    document.getElementById('btn-confirm-venue')?.addEventListener('click', function() {
+      const id = document.getElementById('edit-venue-id').value;
+      const name = document.getElementById('venue-name').value;
+      const address = document.getElementById('venue-address').value;
+      const errorEl = document.getElementById('venue-error');
+      errorEl.classList.add('hidden');
+
+      withLoading(this, async () => {
+        try {
+          await saveVenue({ id: id || null, name, address });
+          closeModal('modal-new-venue');
+          renderVenues();
+          showToast('Lugar guardado', 'success');
+        } catch (e) {
+          errorEl.textContent = e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
+    });
+
+    // Subtabs directorio — usar onclick para evitar listeners acumulados
     document.querySelectorAll('[data-subtab]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.onclick = () => {
         document.querySelectorAll('[data-subtab]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const tab = btn.dataset.subtab;
         document.getElementById('subtab-jugadores').classList.toggle('hidden', tab !== 'jugadores');
         document.getElementById('subtab-teams').classList.toggle('hidden', tab !== 'teams');
-      });
+        document.getElementById('subtab-lugares')?.classList.toggle('hidden', tab !== 'lugares');
+      };
     });
   }
 
@@ -252,13 +363,18 @@ const Directory = (() => {
     deletePlayer,
     saveTeam,
     deleteTeam,
+    saveVenue,
+    deleteVenue,
     renderPlayers,
     renderTeams,
+    renderVenues,
     populateTeamSelect,
     openNewPlayer,
     openEditPlayer,
     openNewTeam,
     openEditTeam,
+    openNewVenue,
+    openEditVenue,
     initEvents
   };
 })();

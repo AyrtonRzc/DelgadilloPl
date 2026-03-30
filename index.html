@@ -35,8 +35,8 @@
       <!-- LOGIN -->
       <div id="tab-login">
         <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="login-email" placeholder="tu@email.com" autocomplete="email">
+          <label class="form-label">Usuario</label>
+          <input type="text" class="form-input" id="login-username" placeholder="tu_usuario" autocomplete="username" autocapitalize="none">
         </div>
         <div class="form-group">
           <label class="form-label">Contraseña</label>
@@ -49,12 +49,13 @@
       <!-- REGISTER -->
       <div id="tab-register" class="hidden">
         <div class="form-group">
-          <label class="form-label">Nombre</label>
-          <input type="text" class="form-input" id="register-name" placeholder="Tu nombre">
+          <label class="form-label">Nombre para mostrar</label>
+          <input type="text" class="form-input" id="register-name" placeholder="Juan Delgadillo">
         </div>
         <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-input" id="register-email" placeholder="tu@email.com" autocomplete="email">
+          <label class="form-label">Usuario</label>
+          <input type="text" class="form-input" id="register-username" placeholder="juan123" autocomplete="username" autocapitalize="none">
+          <div style="font-size:0.75rem; color:var(--color-text-dim); margin-top:0.3rem;">Solo letras, números, puntos, guiones y _</div>
         </div>
         <div class="form-group">
           <label class="form-label">Contraseña</label>
@@ -125,16 +126,21 @@
         <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
           <button class="btn btn-primary" id="btn-new-player" style="flex:1;">+ Jugador</button>
           <button class="btn btn-ghost" id="btn-new-team" style="flex:1;">+ Team</button>
+          <button class="btn btn-ghost" id="btn-new-venue" style="flex:1;">+ Lugar</button>
         </div>
         <div class="tabs" style="margin-bottom:1rem;">
           <button class="tab-btn active" data-subtab="jugadores">Jugadores</button>
           <button class="tab-btn" data-subtab="teams">Teams</button>
+          <button class="tab-btn" data-subtab="lugares">Lugares</button>
         </div>
         <div id="subtab-jugadores">
           <div id="players-list" class="list"></div>
         </div>
         <div id="subtab-teams" class="hidden">
           <div id="teams-list" class="list"></div>
+        </div>
+        <div id="subtab-lugares" class="hidden">
+          <div id="venues-list" class="list"></div>
         </div>
       </div>
 
@@ -225,6 +231,25 @@
   </div>
 </div>
 
+<!-- MODAL: Nuevo/editar lugar -->
+<div class="modal-backdrop" id="modal-new-venue">
+  <div class="modal">
+    <div class="modal-title" id="modal-venue-title">Nuevo lugar</div>
+    <input type="hidden" id="edit-venue-id">
+    <div class="form-group">
+      <label class="form-label">Nombre del lugar</label>
+      <input type="text" class="form-input" id="venue-name" placeholder="Club Delgadillo">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Dirección (opcional)</label>
+      <input type="text" class="form-input" id="venue-address" placeholder="Calle Reforma 123, CDMX">
+    </div>
+    <div id="venue-error" class="form-error hidden"></div>
+    <button class="btn btn-primary" id="btn-confirm-venue">GUARDAR</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-new-venue">Cancelar</button>
+  </div>
+</div>
+
 <!-- MODAL: Nuevo torneo -->
 <div class="modal-backdrop" id="modal-new-tournament">
   <div class="modal">
@@ -252,19 +277,11 @@
         <option value="">Sin lugar especificado</option>
       </select>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Entrada ($)</label>
-        <input type="number" class="form-input" id="t-entry-fee" placeholder="50" min="0" step="0.01">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Moneda</label>
-        <select class="form-select" id="t-currency">
-          <option value="MXN">MXN</option>
-          <option value="USD">USD</option>
-          <option value="ARS">ARS</option>
-          <option value="COP">COP</option>
-        </select>
+    <div class="form-group">
+      <label class="form-label">Entrada ($)</label>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <input type="number" class="form-input" id="t-entry-fee" placeholder="50" min="0" step="1">
+        <span style="color:var(--color-text-muted); font-size:0.8125rem; white-space:nowrap;">MXN</span>
       </div>
     </div>
     <div id="tournament-error" class="form-error hidden"></div>

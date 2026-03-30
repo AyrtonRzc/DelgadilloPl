@@ -7,7 +7,8 @@ const TournamentPage = (() => {
     participants: [],
     matches: [],
     transactions: [],
-    freeParticipant: null
+    freeParticipant: null,
+    operatorToken: null   // null en admin — usado por Match.correctResult
   };
 
   function getTournamentId() {
@@ -153,7 +154,7 @@ const TournamentPage = (() => {
     }
 
     // Render matches de la ronda (excluye el placeholder match_number=0)
-    Match.renderCurrentRound(state.matches, round, state.freeParticipant?.id);
+    Match.renderCurrentRound(state.matches, round, state.freeParticipant?.id, { canEdit: true });
 
     // Mostrar sección de jugador libre SOLO cuando todos los partidos normales están completos
     const normalMatches = roundMatches.filter(m => m.match_type === 'normal' && m.match_number !== 0);
@@ -307,10 +308,19 @@ const TournamentPage = (() => {
 
     const list = document.getElementById('finish-finalist-list');
     list.innerHTML = winners.map(p => `
-      <button class="btn btn-accent" onclick="TournamentPage.finishTournament('${p.id}')">
+      <button class="btn btn-accent" data-champion-id="${p.id}">
         🏆 ${participantDisplayName(p)}
       </button>
     `).join('');
+
+    // Usar delegación de eventos — sin onclick inline con IDs en el HTML
+    list.onclick = async (e) => {
+      const btn = e.target.closest('[data-champion-id]');
+      if (!btn) return;
+      list.onclick = null;
+      closeModal('modal-finish-tournament');
+      await finishTournament(btn.dataset.championId);
+    };
 
     openModal('modal-finish-tournament');
   }
@@ -383,10 +393,53 @@ const TournamentPage = (() => {
     });
   }
 
+  async function ensureTokens() {
+    const t = state.tournament;
+    if (t.view_token && t.operator_token) return;
+    // Generar tokens si faltan (torneos creados antes del trigger)
+    const vt = crypto.randomUUID().replace(/-/g, '');
+    const ot = crypto.randomUUID().replace(/-/g, '');
+    await db.from('tournaments').update({ view_token: vt, operator_token: ot }).eq('id', t.id);
+    await reload();
+  }
+
+  function openShareLinksModal() {
+    const t = state.tournament;
+    const base = window.location.origin +
+      window.location.pathname.replace('tournament.html', 'public.html');
+    const viewUrl = `${base}?t=${t.view_token}`;
+    const opUrl   = `${base}?t=${t.view_token}&op=${t.operator_token}`;
+
+    document.getElementById('share-view-url').value = viewUrl;
+    document.getElementById('share-operator-url').value = opUrl;
+
+    document.getElementById('btn-copy-view-url').onclick = () => {
+      navigator.clipboard.writeText(viewUrl);
+      showToast('Link de vista copiado', 'success');
+    };
+    document.getElementById('btn-copy-operator-url').onclick = () => {
+      navigator.clipboard.writeText(opUrl);
+      showToast('Link de operador copiado', 'success');
+    };
+
+    openModal('modal-share-links');
+  }
+
   function initEvents() {
-    document.getElementById('btn-start-roulette')?.addEventListener('click', openRouletteForCurrentRound);
-    document.getElementById('btn-advance-round')?.addEventListener('click', advanceRound);
-    document.getElementById('btn-finish-tournament')?.addEventListener('click', openFinishModal);
+    document.getElementById('btn-start-roulette')?.addEventListener('click', function() {
+      withLoading(this, openRouletteForCurrentRound);
+    });
+    document.getElementById('btn-advance-round')?.addEventListener('click', function() {
+      withLoading(this, advanceRound);
+    });
+    document.getElementById('btn-finish-tournament')?.addEventListener('click', function() {
+      withLoading(this, openFinishModal);
+    });
+
+    document.getElementById('btn-tournament-menu')?.addEventListener('click', async function() {
+      await ensureTokens();
+      openShareLinksModal();
+    });
   }
 
   async function init() {
@@ -403,7 +456,7 @@ const TournamentPage = (() => {
       await reload();
 
       // Si está en setup, mostrar botón de iniciar
-      if (state.tournament.status === 'setup') {
+      if (state.tournament?.status === 'setup') {
         renderSetupScreen();
       }
     } catch (e) {
@@ -438,12 +491,12 @@ const TournamentPage = (() => {
       openAddParticipantModal();
     });
 
-    document.getElementById('btn-start-tournament')?.addEventListener('click', async () => {
+    document.getElementById('btn-start-tournament')?.addEventListener('click', function() {
       if (participants.length < 2) {
         showToast('Necesitas al menos 2 participantes', 'error');
         return;
       }
-      await startTournament();
+      withLoading(this, startTournament);
     });
 
     document.querySelector('[data-tab="ronda"]')?.click();
@@ -505,7 +558,7 @@ const TournamentPage = (() => {
 
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    document.getElementById('btn-confirm-add-participant').addEventListener('click', async () => {
+    document.getElementById('btn-confirm-add-participant').addEventListener('click', function() {
       const p1 = document.getElementById('add-p1').value;
       const p2 = isDoubles ? document.getElementById('add-p2').value : null;
       const pairName = isDoubles ? document.getElementById('add-pair-name')?.value.trim() : null;
@@ -518,15 +571,17 @@ const TournamentPage = (() => {
         return;
       }
 
-      try {
-        await addParticipant(p1, p2, pairName || null);
-        closeModal('modal-add-participant');
-        renderSetupScreen();
-        showToast('Participante agregado', 'success');
-      } catch (e) {
-        errEl.textContent = e.message;
-        errEl.classList.remove('hidden');
-      }
+      withLoading(this, async () => {
+        try {
+          await addParticipant(p1, p2, pairName || null);
+          closeModal('modal-add-participant');
+          renderSetupScreen();
+          showToast('Participante agregado', 'success');
+        } catch (e) {
+          errEl.textContent = e.message;
+          errEl.classList.remove('hidden');
+        }
+      });
     });
 
     openModal('modal-add-participant');

@@ -116,8 +116,8 @@ const Roulette = (() => {
 
     timerInterval = setInterval(() => {
       remaining--;
-      if (countEl) countEl.textContent = remaining;
-      if (barFill) barFill.style.width = `${(remaining / seconds) * 100}%`;
+      if (countEl) countEl.textContent = Math.max(remaining, 0);
+      if (barFill) barFill.style.width = `${Math.max((remaining / seconds) * 100, 0)}%`;
 
       if (remaining <= 0) {
         clearInterval(timerInterval);

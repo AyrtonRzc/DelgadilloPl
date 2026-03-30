@@ -29,6 +29,7 @@ const App = (() => {
     renderOrgSelector();
     Directory.renderPlayers();
     Directory.renderTeams();
+    Directory.renderVenues();
     TournamentsList.renderTournaments();
     TournamentsList.renderActiveTournamentBanner();
     showOrgScreen(true);
@@ -84,12 +85,12 @@ const App = (() => {
   function initAuthForms() {
     // Login
     document.getElementById('btn-login')?.addEventListener('click', async () => {
-      const email = document.getElementById('login-email').value.trim();
+      const username = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
       const errorEl = document.getElementById('login-error');
       errorEl.classList.add('hidden');
 
-      if (!email || !password) {
+      if (!username || !password) {
         errorEl.textContent = 'Completa todos los campos';
         errorEl.classList.remove('hidden');
         return;
@@ -100,25 +101,26 @@ const App = (() => {
       btn.textContent = 'Entrando...';
 
       try {
-        await Auth.login(email, password);
+        await Auth.login(username, password);
         // onSignedIn se llama automáticamente por onAuthStateChange
       } catch (e) {
-        errorEl.textContent = 'Email o contraseña incorrectos';
+        errorEl.textContent = 'Usuario o contraseña incorrectos';
         errorEl.classList.remove('hidden');
+      } finally {
         btn.disabled = false;
-        btn.textContent = 'Entrar';
+        btn.textContent = 'ENTRAR';
       }
     });
 
     // Register
     document.getElementById('btn-register')?.addEventListener('click', async () => {
       const name = document.getElementById('register-name').value.trim();
-      const email = document.getElementById('register-email').value.trim();
+      const username = document.getElementById('register-username').value.trim();
       const password = document.getElementById('register-password').value;
       const errorEl = document.getElementById('register-error');
       errorEl.classList.add('hidden');
 
-      if (!name || !email || !password) {
+      if (!name || !username || !password) {
         errorEl.textContent = 'Completa todos los campos';
         errorEl.classList.remove('hidden');
         return;
@@ -134,15 +136,15 @@ const App = (() => {
       btn.textContent = 'Creando cuenta...';
 
       try {
-        await Auth.register(email, password, name);
-        showToast('Cuenta creada. Revisa tu email para confirmar.', 'success', 5000);
-        btn.disabled = false;
-        btn.textContent = 'Crear cuenta';
+        await Auth.register(username, password, name);
+        showToast(`Cuenta creada. Bienvenido, ${name}!`, 'success', 4000);
+        // Hacer login automático después del registro
+        await Auth.login(username, password);
       } catch (e) {
         errorEl.textContent = e.message || 'Error al registrarse';
         errorEl.classList.remove('hidden');
         btn.disabled = false;
-        btn.textContent = 'Crear cuenta';
+        btn.textContent = 'CREAR CUENTA';
       }
     });
 
@@ -163,7 +165,7 @@ const App = (() => {
     });
     document.getElementById('org-slug')?.addEventListener('input', function() { this._touched = true; });
 
-    document.getElementById('btn-confirm-create-org')?.addEventListener('click', async () => {
+    document.getElementById('btn-confirm-create-org')?.addEventListener('click', function() {
       const name = document.getElementById('org-name').value.trim();
       const slug = document.getElementById('org-slug').value.trim();
       const errorEl = document.getElementById('create-org-error');
@@ -180,17 +182,19 @@ const App = (() => {
         return;
       }
 
-      try {
-        const org = await Org.createOrg(name, slug);
-        closeModal('modal-create-org');
-        const orgs = await Org.loadUserOrgs();
-        Store.set({ currentOrg: org });
-        await loadAndRender(org);
-        showToast('Organización creada', 'success');
-      } catch (e) {
-        errorEl.textContent = e.message?.includes('duplicate') ? 'Ese slug ya está en uso' : e.message;
-        errorEl.classList.remove('hidden');
-      }
+      withLoading(this, async () => {
+        try {
+          const org = await Org.createOrg(name, slug);
+          closeModal('modal-create-org');
+          await Org.loadUserOrgs();
+          Store.set({ currentOrg: org });
+          await loadAndRender(org);
+          showToast('Organización creada', 'success');
+        } catch (e) {
+          errorEl.textContent = e.message?.includes('duplicate') ? 'Ese slug ya está en uso' : e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
     });
 
     // Cambiar de org

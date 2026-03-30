@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torneo — Pool Torneos</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/bracket.css">
+  <link rel="stylesheet" href="css/roulette.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <img src="assets/icons/logo.png" alt="Pool Torneos" class="topbar-logo" style="height:28px;">
+    <div class="topbar-title" id="tournament-title" style="font-size:1rem;"></div>
+    <div id="operator-badge" class="hidden"
+      style="font-size:0.625rem; font-family:var(--font-display); letter-spacing:0.06em;
+             background:rgba(212,160,23,0.15); color:var(--color-gold);
+             border:1px solid var(--color-gold-border); border-radius:99px; padding:2px 8px;">
+      OPERADOR
+    </div>
+  </header>
+
+  <!-- INFO BAR -->
+  <div id="tournament-info-bar" style="
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0.625rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  ">
+    <div style="display:flex; flex-direction:column; gap:0.2rem;">
+      <span id="info-mode" style="font-family:var(--font-display); font-size:0.8125rem; letter-spacing:0.05em; color:var(--color-text-muted);"></span>
+      <span id="info-venue" style="font-size:0.6875rem; color:var(--color-text-dim);"></span>
+    </div>
+    <div style="text-align:right;">
+      <div class="prize-amount" style="font-size:1.375rem;" id="info-prize">$0</div>
+      <div class="prize-label">bote</div>
+    </div>
+  </div>
+
+  <div class="main-content" style="max-width:100%; padding:0;">
+
+    <!-- Pantalla: torneo no encontrado -->
+    <div id="screen-not-found" class="hidden" style="padding:2rem 1rem; text-align:center;">
+      <div style="font-size:3rem; margin-bottom:1rem;">🔒</div>
+      <div style="font-family:var(--font-display); font-size:1.25rem; color:var(--color-text); margin-bottom:0.5rem;">
+        Torneo no encontrado
+      </div>
+      <div style="font-size:0.875rem; color:var(--color-text-muted);">
+        El link puede ser incorrecto o el torneo fue eliminado.
+      </div>
+    </div>
+
+    <!-- Pantalla: cargando -->
+    <div id="screen-loading" style="padding:2rem 1rem; text-align:center; color:var(--color-text-muted);">
+      Cargando torneo...
+    </div>
+
+    <!-- Contenido principal -->
+    <div id="screen-tournament" class="hidden">
+
+      <!-- TABS -->
+      <div style="padding:0.75rem 1rem 0;">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="bracket">Bracket</button>
+          <button class="tab-btn" data-tab="ronda">Ronda</button>
+          <button class="tab-btn" data-tab="bote">Bote</button>
+        </div>
+      </div>
+
+      <!-- TAB: BRACKET -->
+      <div id="tab-bracket" style="padding:0 1rem 2rem; overflow-x:auto;">
+        <div id="bracket-container"></div>
+      </div>
+
+      <!-- TAB: RONDA ACTUAL -->
+      <div id="tab-ronda" class="hidden" style="padding:0 1rem 2rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem; padding-top:0.25rem;">
+          <div class="ball-number" id="round-ball">1</div>
+          <h2 style="font-family:var(--font-display); font-size:1.125rem; font-weight:600; letter-spacing:0.05em;" id="round-title">Ronda 1</h2>
+        </div>
+
+        <div id="matches-list" class="list"></div>
+
+        <!-- Jugador libre (solo operador) -->
+        <div id="free-player-section" class="hidden" style="margin-top:1.5rem;">
+          <div class="alert alert-warning" style="margin-bottom:1rem;">
+            <div>
+              <div style="font-family:var(--font-display); font-weight:600; margin-bottom:0.25rem; letter-spacing:0.04em;">JUGADOR SIN RIVAL</div>
+              <div><strong id="free-player-name"></strong> quedó sin pareja esta ronda.</div>
+            </div>
+          </div>
+          <button class="btn btn-accent" id="btn-start-roulette">🎡 INICIAR RULETA</button>
+        </div>
+
+        <!-- Avanzar ronda (solo operador) -->
+        <div id="advance-round-section" class="hidden" style="margin-top:1.5rem;">
+          <div class="alert alert-success" style="margin-bottom:1rem;">
+            ✅ Todos los partidos completados
+          </div>
+          <button class="btn btn-primary" id="btn-advance-round">SIGUIENTE RONDA →</button>
+        </div>
+
+        <!-- Finalizar (solo operador) -->
+        <div id="finish-tournament-section" class="hidden" style="margin-top:1.5rem;">
+          <button class="btn btn-accent" id="btn-finish-tournament">🏆 FINALIZAR TORNEO</button>
+        </div>
+      </div>
+
+      <!-- TAB: BOTE -->
+      <div id="tab-bote" class="hidden" style="padding:0 1rem 2rem;">
+        <div class="prize-banner" style="margin-bottom:1rem;">
+          <div class="prize-amount" id="bote-total">$0</div>
+          <div class="prize-label">Bote total acumulado</div>
+        </div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title" style="margin-bottom:0.75rem;">Desglose</div>
+          <div id="bote-breakdown"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:0.75rem;">Historial</div>
+          <div id="bote-transactions" class="list"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Resultado de partido -->
+<div class="modal-backdrop" id="modal-match-result">
+  <div class="modal">
+    <div class="modal-title">¿Quién ganó?</div>
+    <div id="match-result-info" style="margin-bottom:1.25rem; color:var(--color-text-muted); font-size:0.875rem; font-family:var(--font-display); letter-spacing:0.04em;"></div>
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+      <button class="btn btn-success" id="btn-winner-1" style="font-size:1.125rem; padding:1rem;"></button>
+      <button class="btn btn-success" id="btn-winner-2" style="font-size:1.125rem; padding:1rem;"></button>
+    </div>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-match-result">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: Ruleta -->
+<div class="modal-backdrop" id="modal-roulette">
+  <div class="modal" style="max-height:92dvh;">
+
+    <div id="roulette-step-intro">
+      <div class="modal-title-gold">🎡 Ruleta de Reingreso</div>
+      <div style="margin-bottom:1rem; font-size:0.875rem; color:var(--color-text-muted); line-height:1.5;">
+        <strong style="color:var(--color-text);" id="roulette-free-player"></strong> quedó sin rival.<br>
+        Se sorteará entre los perdedores quién puede reingresar.
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div class="form-label" style="margin-bottom:0.5rem;">Elegibles</div>
+        <div id="roulette-candidates-list" class="list"></div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label class="form-label" style="margin-bottom:0.4rem;">Costo de reingreso</label>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="color:var(--color-text-muted); font-size:1rem;">$</span>
+          <input type="number" id="roulette-cost-input" min="0" step="1"
+            style="flex:1; background:var(--color-surface-2); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:0.5rem 0.75rem; color:var(--color-text); font-size:1rem; font-family:var(--font-display); font-weight:600;">
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.625rem;">
+        <button class="btn btn-accent" id="btn-spin">🎡 GIRAR RULETA</button>
+        <button class="btn btn-ghost" id="btn-pick-manual">👆 ELEGIR MANUALMENTE</button>
+        <button class="btn btn-ghost" data-close-modal="modal-roulette">Cancelar</button>
+      </div>
+    </div>
+
+    <div id="roulette-step-manual" class="hidden">
+      <div class="modal-title">👆 Elegir jugador</div>
+      <div style="margin-bottom:1rem; font-size:0.875rem; color:var(--color-text-muted);">Selecciona quién intentará reingresar</div>
+      <div id="roulette-manual-list" class="list" style="margin-bottom:1rem;"></div>
+      <button class="btn btn-ghost" id="btn-manual-back">← Volver</button>
+    </div>
+
+    <div id="roulette-step-result" class="hidden">
+      <div class="modal-title-gold" style="text-align:center;">🎯 La ruleta eligió</div>
+      <div style="display:flex; justify-content:center; margin-bottom:0.75rem; position:relative;">
+        <div class="roulette-pointer"></div>
+      </div>
+      <div style="display:flex; justify-content:center; margin-bottom:1rem;">
+        <canvas id="roulette-canvas" width="260" height="260"></canvas>
+      </div>
+      <div id="roulette-selected-name" style="font-family:var(--font-display); font-size:2rem; font-weight:700; text-align:center; margin-bottom:0.5rem; color:var(--color-gold); letter-spacing:0.04em;"></div>
+      <div style="text-align:center; color:var(--color-text-muted); margin-bottom:1.25rem; font-size:0.875rem; line-height:1.5;">
+        ¿Deseas reingresar por <strong id="roulette-cost-confirm" style="color:var(--color-gold);"></strong>?<br>
+        Jugarás contra <strong id="roulette-vs-player" style="color:var(--color-text);"></strong>
+      </div>
+      <div id="roulette-rejected-history" class="hidden" style="margin-bottom:1rem;">
+        <div class="form-label" style="margin-bottom:0.5rem;">Ya rechazaron</div>
+        <div id="roulette-rejected-list" style="display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
+      </div>
+      <div class="roulette-timer-bar" style="margin-bottom:0.25rem;">
+        <div class="roulette-timer-bar-fill" style="width:100%;"></div>
+      </div>
+      <div id="roulette-timer" style="text-align:center; margin-bottom:1rem; color:var(--color-text-dim); font-size:0.8125rem;">
+        ⏱ <span id="roulette-timer-count">30</span>s para decidir
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <button class="btn btn-success" id="btn-roulette-accept">✅ SÍ, ACEPTO</button>
+        <button class="btn btn-danger" id="btn-roulette-reject">❌ NO, RECHAZO</button>
+      </div>
+    </div>
+
+    <div id="roulette-step-accepted" class="hidden" style="text-align:center;">
+      <div style="font-size:3rem; margin-bottom:0.75rem;">✅</div>
+      <div class="modal-title-gold">¡Reingreso confirmado!</div>
+      <div style="margin-bottom:1rem; color:var(--color-text-muted); font-size:0.9375rem; line-height:1.5;">
+        <strong id="roulette-accepted-name" style="color:var(--color-text);"></strong> pagó
+        <strong id="roulette-accepted-amount" style="color:var(--color-gold);"></strong> y regresa al torneo.
+      </div>
+      <div class="prize-banner" style="margin-bottom:1.5rem;">
+        <div class="prize-amount" id="roulette-new-prize"></div>
+        <div class="prize-label">Nuevo bote</div>
+      </div>
+      <button class="btn btn-primary" id="btn-roulette-done">CONTINUAR →</button>
+    </div>
+
+    <div id="roulette-step-all-rejected" class="hidden" style="text-align:center;">
+      <div style="font-size:3rem; margin-bottom:0.75rem;">🚶</div>
+      <div class="modal-title">Nadie quiso reingresar</div>
+      <div style="margin-bottom:1rem; color:var(--color-text-muted); font-size:0.9375rem; line-height:1.5;">
+        <strong id="roulette-bye-player" style="color:var(--color-text);"></strong> avanza automáticamente.
+      </div>
+      <div id="roulette-all-rejected-list" style="margin-bottom:1.5rem; display:flex; flex-wrap:wrap; gap:0.4rem; justify-content:center;"></div>
+      <button class="btn btn-primary" id="btn-roulette-bye-done">CONTINUAR →</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: Finalizar torneo -->
+<div class="modal-backdrop" id="modal-finish-tournament">
+  <div class="modal">
+    <div class="modal-title-gold">🏆 Finalizar torneo</div>
+    <div style="margin-bottom:1rem; color:var(--color-text-muted); font-size:0.875rem;">Selecciona al campeón</div>
+    <div id="finish-finalist-list" class="list" style="margin-bottom:1rem;"></div>
+    <button class="btn btn-ghost" data-close-modal="modal-finish-tournament">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: Corregir resultado -->
+<div class="modal-backdrop" id="modal-correct-result">
+  <div class="modal">
+    <div class="modal-title">Corregir resultado</div>
+    <div class="alert alert-warning" style="margin-bottom:1rem; font-size:0.875rem;">
+      ⚠️ Esto revertirá el partido a pendiente y restaurará al perdedor como activo.
+    </div>
+    <div id="correct-result-info" style="margin-bottom:1.25rem; font-size:0.9375rem; color:var(--color-text-muted); text-align:center;"></div>
+    <button class="btn btn-danger" id="btn-confirm-correct-result">Confirmar corrección</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-correct-result">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/utils/toast.js"></script>
+<script src="js/utils/modal.js"></script>
+<script src="js/utils/format.js"></script>
+<script src="js/state/store.js"></script>
+<script src="js/tournament/bracket.js"></script>
+<script src="js/tournament/match.js"></script>
+<script src="js/tournament/prize.js"></script>
+<script src="js/reingress/roulette.js"></script>
+<script src="js/reingress/manager.js"></script>
+<script src="js/public-page.js"></script>
+</body>
+</html>
