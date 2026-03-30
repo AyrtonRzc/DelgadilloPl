@@ -69,6 +69,7 @@ const App = (() => {
         const tabMap = {
           torneos: 'tab-torneos',
           directorio: 'tab-directorio',
+          miembros: 'tab-miembros',
           stats: 'tab-stats',
           login: 'tab-login',
           register: 'tab-register'
@@ -78,6 +79,9 @@ const App = (() => {
           document.getElementById(id)?.classList.add('hidden');
         });
         if (tabMap[tab]) document.getElementById(tabMap[tab])?.classList.remove('hidden');
+
+        // Cargar datos al entrar a la pestaña Miembros
+        if (tab === 'miembros') renderMembersList();
       });
     });
   }
@@ -154,9 +158,165 @@ const App = (() => {
     });
   }
 
+  // ── MIEMBROS ─────────────────────────────────────────
+
+  function initMemberTabs() {
+    document.querySelectorAll('[data-membertab]').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('[data-membertab]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.membertab;
+        document.getElementById('membertab-crear').classList.toggle('hidden', tab !== 'crear');
+        document.getElementById('membertab-codigos').classList.toggle('hidden', tab !== 'codigos');
+        document.getElementById('membertab-lista').classList.toggle('hidden', tab !== 'lista');
+        if (tab === 'codigos') renderInviteCodes();
+        if (tab === 'lista') renderMembersList();
+      };
+    });
+  }
+
+  async function renderInviteCodes() {
+    const container = document.getElementById('invite-codes-list');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center; color:var(--color-text-dim); padding:1rem;">Cargando...</div>';
+    const codes = await Org.loadInviteCodes();
+    if (!codes.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔑</div>
+          <div class="empty-state-title">Sin códigos activos</div>
+          <div class="empty-state-desc">Genera uno con el botón de arriba</div>
+        </div>`;
+      return;
+    }
+    container.innerHTML = codes.map(c => `
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-name" style="font-family:var(--font-display); letter-spacing:0.1em;">${c.code}</div>
+          <div class="list-item-sub">Rol: ${c.role} · ${c.used_count || 0} uso(s)</div>
+        </div>
+        <button class="btn-icon btn-sm" onclick="navigator.clipboard.writeText('${c.code}').then(()=>showToast('Código copiado','success'))" title="Copiar">📋</button>
+        <button class="btn-icon btn-sm" onclick="App.deleteCode('${c.id}')" title="Eliminar">🗑️</button>
+      </div>`).join('');
+  }
+
+  async function deleteCode(id) {
+    try {
+      await Org.deleteInviteCode(id);
+      await renderInviteCodes();
+      showToast('Código eliminado', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async function renderMembersList() {
+    const container = document.getElementById('members-list');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center; color:var(--color-text-dim); padding:1rem;">Cargando...</div>';
+    const members = await Org.loadMembers();
+    if (!members.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <div class="empty-state-title">Sin miembros</div>
+          <div class="empty-state-desc">Invita miembros a la organización</div>
+        </div>`;
+      return;
+    }
+    container.innerHTML = members.map(m => {
+      const roleLabel = { owner: '👑 Dueño', admin: '⚙️ Admin', member: '👤 Miembro' }[m.role] || m.role;
+      const date = new Date(m.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+      return `
+        <div class="list-item">
+          <div class="list-item-info">
+            <div class="list-item-name" style="font-size:0.8125rem; color:var(--color-text-dim);">${m.user_id.slice(0, 8)}…</div>
+            <div class="list-item-sub">${roleLabel} · Desde ${date}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function initMembersTab() {
+    initMemberTabs();
+
+    document.getElementById('btn-create-member')?.addEventListener('click', function() {
+      const username = document.getElementById('member-username').value.trim();
+      const displayName = document.getElementById('member-display-name').value.trim();
+      const password = document.getElementById('member-password').value;
+      const role = document.getElementById('member-role').value;
+      const errorEl = document.getElementById('member-create-error');
+      errorEl.classList.add('hidden');
+
+      if (!username || !displayName || !password) {
+        errorEl.textContent = 'Completa todos los campos';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      withLoading(this, async () => {
+        try {
+          await Org.createMemberAccount({ username, password, displayName, role });
+          document.getElementById('member-username').value = '';
+          document.getElementById('member-display-name').value = '';
+          document.getElementById('member-password').value = '';
+          showToast(`Cuenta creada para ${displayName}`, 'success');
+        } catch (e) {
+          errorEl.textContent = e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
+    });
+
+    document.getElementById('btn-generate-code')?.addEventListener('click', function() {
+      const role = document.getElementById('invite-role').value;
+      withLoading(this, async () => {
+        try {
+          const code = await Org.generateInviteCode(role);
+          await renderInviteCodes();
+          showToast(`Código generado: ${code.code}`, 'success', 5000);
+        } catch (e) {
+          showToast(e.message, 'error');
+        }
+      });
+    });
+  }
+
   function initOrgForms() {
     document.getElementById('btn-create-org')?.addEventListener('click', () => openModal('modal-create-org'));
-    document.getElementById('btn-join-org')?.addEventListener('click', () => openModal('modal-join-org'));
+    document.getElementById('btn-join-org')?.addEventListener('click', () => {
+      document.getElementById('join-code-input').value = '';
+      document.getElementById('join-code-error').classList.add('hidden');
+      openModal('modal-join-org');
+    });
+
+    document.getElementById('btn-confirm-join')?.addEventListener('click', function() {
+      const code = document.getElementById('join-code-input').value.trim();
+      const errorEl = document.getElementById('join-code-error');
+      errorEl.classList.add('hidden');
+      if (!code) {
+        errorEl.textContent = 'Ingresa el código de invitación';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      withLoading(this, async () => {
+        try {
+          await Org.joinByCode(code);
+          closeModal('modal-join-org');
+          const orgs = await Org.loadUserOrgs();
+          if (orgs.length) await loadAndRender(orgs[orgs.length - 1]);
+          showToast('Te uniste a la organización', 'success');
+        } catch (e) {
+          errorEl.textContent = e.message;
+          errorEl.classList.remove('hidden');
+        }
+      });
+    });
 
     // Auto-slug
     document.getElementById('org-name')?.addEventListener('input', e => {
@@ -209,6 +369,7 @@ const App = (() => {
     initTabs();
     initAuthForms();
     initOrgForms();
+    initMembersTab();
     Directory.initEvents();
     TournamentsList.initEvents();
 
@@ -220,7 +381,7 @@ const App = (() => {
     }
   }
 
-  return { init, onSignedIn, onSignedOut };
+  return { init, onSignedIn, onSignedOut, deleteCode, renderMembersList };
 })();
 
 document.addEventListener('DOMContentLoaded', () => App.init());

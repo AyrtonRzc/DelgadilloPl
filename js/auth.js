@@ -1,6 +1,7 @@
 const Auth = (() => {
 
   let _unsubscribeAuth = null;
+  let _suppressAuthEvents = false;
 
   // Dominio usado internamente para cuentas sin email real
   // Supabase acepta cualquier formato válido de email
@@ -26,6 +27,7 @@ const Auth = (() => {
     }
 
     const { data: { subscription } } = db.auth.onAuthStateChange((event, session) => {
+      if (_suppressAuthEvents) return;
       if (event === 'SIGNED_IN') {
         Store.set({ user: session.user });
         if (typeof App !== 'undefined') App.onSignedIn();
@@ -118,5 +120,7 @@ const Auth = (() => {
     return true;
   }
 
-  return { init, login, register, logout, currentUser, currentUsername, requireAuth };
+  function suppressEvents(val) { _suppressAuthEvents = val; }
+
+  return { init, login, register, logout, currentUser, currentUsername, requireAuth, suppressEvents };
 })();

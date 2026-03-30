@@ -112,6 +112,7 @@
       <div class="tabs">
         <button class="tab-btn active" data-tab="torneos">Torneos</button>
         <button class="tab-btn" data-tab="directorio">Directorio</button>
+        <button class="tab-btn" data-tab="miembros">Miembros</button>
         <button class="tab-btn" data-tab="stats">Stats</button>
       </div>
 
@@ -153,6 +154,68 @@
         </div>
       </div>
 
+      <!-- Tab: Miembros -->
+      <div id="tab-miembros" class="hidden">
+        <div class="tabs" style="margin-bottom:1rem;">
+          <button class="tab-btn active" data-membertab="crear">Crear cuenta</button>
+          <button class="tab-btn" data-membertab="codigos">Códigos</button>
+          <button class="tab-btn" data-membertab="lista">Miembros</button>
+        </div>
+
+        <!-- Subtab: Crear cuenta (Opción A) -->
+        <div id="membertab-crear">
+          <div class="alert alert-info" style="margin-bottom:1rem; font-size:0.8125rem;">
+            Crea una cuenta directamente para un miembro. Él podrá entrar con el usuario y contraseña que le asignes.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Usuario</label>
+            <input type="text" class="form-input" id="member-username" placeholder="juan123" autocapitalize="none" autocorrect="off" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre para mostrar</label>
+            <input type="text" class="form-input" id="member-display-name" placeholder="Juan López">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-input" id="member-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rol</label>
+            <select class="form-select" id="member-role">
+              <option value="member">Miembro</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div id="member-create-error" class="form-error hidden"></div>
+          <button class="btn btn-primary" id="btn-create-member">CREAR MIEMBRO</button>
+        </div>
+
+        <!-- Subtab: Códigos de invitación (Opción B) -->
+        <div id="membertab-codigos" class="hidden">
+          <div class="alert alert-info" style="margin-bottom:1rem; font-size:0.8125rem;">
+            Genera un código y compártelo. El invitado lo usa al registrarse para unirse a tu organización.
+          </div>
+          <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center;">
+            <select class="form-select" id="invite-role" style="flex:1;">
+              <option value="member">Rol: Miembro</option>
+              <option value="admin">Rol: Admin</option>
+            </select>
+            <button class="btn btn-accent" id="btn-generate-code" style="white-space:nowrap;">+ Generar</button>
+          </div>
+          <div id="invite-codes-list" class="list"></div>
+        </div>
+
+        <!-- Subtab: Lista de miembros -->
+        <div id="membertab-lista" class="hidden">
+          <div id="members-list" class="list">
+            <div class="empty-state">
+              <div class="empty-state-icon">👥</div>
+              <div class="empty-state-title">Cargando...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -179,11 +242,16 @@
 <!-- MODAL: Unirse -->
 <div class="modal-backdrop" id="modal-join-org">
   <div class="modal">
-    <div class="modal-title">Unirme a organización</div>
-    <div class="alert alert-info" style="margin-bottom:1rem;">
-      Pide al dueño que te invite desde su panel de miembros.
+    <div class="modal-title">Unirme con código</div>
+    <div class="form-group">
+      <label class="form-label">Código de invitación</label>
+      <input type="text" class="form-input" id="join-code-input" placeholder="ABCD1234"
+        autocapitalize="characters" autocorrect="off" spellcheck="false"
+        style="font-family:var(--font-display); letter-spacing:0.12em; text-align:center; font-size:1.125rem;">
     </div>
-    <button class="btn btn-ghost" data-close-modal="modal-join-org">Cerrar</button>
+    <div id="join-code-error" class="form-error hidden"></div>
+    <button class="btn btn-primary" id="btn-confirm-join">UNIRME</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-join-org">Cancelar</button>
   </div>
 </div>
 
