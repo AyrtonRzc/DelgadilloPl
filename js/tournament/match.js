@@ -62,12 +62,16 @@ const Match = (() => {
           <div class="match-card-header">Partido ${m.match_number}</div>
           <div class="match-card-players">
             <div class="match-card-player ${p1WinClass}">
-              ${p1Team ? `<span class="team-badge-sm" style="background:${p1Team.color}">${p1Team.name}</span>` : ''}
+              ${p1Team ? (p1Team.logo_url
+                ? `<img src="${p1Team.logo_url}" style="height:16px; width:auto; object-fit:contain;">`
+                : `<span class="team-badge-sm" style="background:${p1Team.color}">${p1Team.name}</span>`) : ''}
               ${p1Name}
             </div>
             <div class="match-vs">VS</div>
             <div class="match-card-player ${p2WinClass}">
-              ${p2Team ? `<span class="team-badge-sm" style="background:${p2Team.color}">${p2Team.name}</span>` : ''}
+              ${p2Team ? (p2Team.logo_url
+                ? `<img src="${p2Team.logo_url}" style="height:16px; width:auto; object-fit:contain;">`
+                : `<span class="team-badge-sm" style="background:${p2Team.color}">${p2Team.name}</span>`) : ''}
               ${p2Name}
             </div>
           </div>

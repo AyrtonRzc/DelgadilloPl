@@ -91,8 +91,12 @@ const Directory = (() => {
     }
 
     container.innerHTML = players.map(p => {
-      const teamBadge = p.teams
-        ? `<span class="badge badge-team" style="background:${p.teams.color}">${p.teams.name}</span>`
+      const teamLogo = p.teams?.logo_url
+        ? `<img src="${p.teams.logo_url}" style="height:18px; width:auto; object-fit:contain; vertical-align:middle; margin-right:2px;">`
+        : '';
+      const teamName = p.teams ? p.teams.name : '';
+      const teamInfo = p.teams
+        ? `<span style="display:inline-flex; align-items:center; gap:3px; font-size:0.75rem; color:var(--color-text-muted);">${teamLogo}${teamName}</span>`
         : '';
       const color = avatarColor(p.name);
       const initials = avatarInitials(p.name);
@@ -100,8 +104,8 @@ const Directory = (() => {
         <div class="list-item">
           <div class="avatar" style="background:${color}">${initials}</div>
           <div class="list-item-info">
-            <div class="list-item-name">${p.name}</div>
-            <div class="list-item-sub">${p.nickname ? `"${p.nickname}" ` : ''}${teamBadge}</div>
+            <div class="list-item-name">${p.name}${p.nickname ? ` <span style="color:var(--color-text-muted); font-weight:400; font-size:0.875rem;">"${p.nickname}"</span>` : ''}</div>
+            <div class="list-item-sub">${teamInfo}</div>
           </div>
           <button class="btn-icon btn-sm" onclick="Directory.openEditPlayer('${p.id}')">✏️</button>
         </div>`;
@@ -123,14 +127,19 @@ const Directory = (() => {
       return;
     }
 
-    container.innerHTML = teams.map(t => `
-      <div class="list-item">
-        <div style="width:36px; height:36px; border-radius:50%; background:${t.color}; flex-shrink:0;"></div>
-        <div class="list-item-info">
-          <div class="list-item-name">${t.name}</div>
-        </div>
-        <button class="btn-icon btn-sm" onclick="Directory.openEditTeam('${t.id}')">✏️</button>
-      </div>`).join('');
+    container.innerHTML = teams.map(t => {
+      const avatar = t.logo_url
+        ? `<img src="${t.logo_url}" style="width:36px; height:36px; border-radius:50%; object-fit:contain; flex-shrink:0; background:${t.color};">`
+        : `<div style="width:36px; height:36px; border-radius:50%; background:${t.color}; flex-shrink:0;"></div>`;
+      return `
+        <div class="list-item">
+          ${avatar}
+          <div class="list-item-info">
+            <div class="list-item-name">${t.name}</div>
+          </div>
+          <button class="btn-icon btn-sm" onclick="Directory.openEditTeam('${t.id}')">✏️</button>
+        </div>`;
+    }).join('');
   }
 
   function populateTeamSelect(selectId, selectedId = null) {

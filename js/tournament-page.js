@@ -29,8 +29,8 @@ const TournamentPage = (() => {
       .from('tournament_participants')
       .select(`
         *,
-        player1:players!tournament_participants_player1_id_fkey(id, name, nickname, teams(name,color)),
-        player2:players!tournament_participants_player2_id_fkey(id, name, nickname, teams(name,color))
+        player1:players!tournament_participants_player1_id_fkey(id, name, nickname, teams(name,color,logo_url)),
+        player2:players!tournament_participants_player2_id_fkey(id, name, nickname, teams(name,color,logo_url))
       `)
       .eq('tournament_id', tournamentId)
       .order('seed');
@@ -356,8 +356,8 @@ const TournamentPage = (() => {
       .insert(payload)
       .select(`
         *,
-        player1:players!tournament_participants_player1_id_fkey(id, name, nickname, teams(name,color)),
-        player2:players!tournament_participants_player2_id_fkey(id, name, nickname, teams(name,color))
+        player1:players!tournament_participants_player1_id_fkey(id, name, nickname, teams(name,color,logo_url)),
+        player2:players!tournament_participants_player2_id_fkey(id, name, nickname, teams(name,color,logo_url))
       `)
       .single();
 

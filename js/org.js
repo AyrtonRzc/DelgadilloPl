@@ -56,7 +56,7 @@ const Org = (() => {
   async function loadPlayers(orgId) {
     const { data, error } = await db
       .from('players')
-      .select('*, teams(id, name, color)')
+      .select('*, teams(id, name, color, logo_url)')
       .eq('org_id', orgId)
       .order('name');
     if (!error) Store.set({ players: data || [] });

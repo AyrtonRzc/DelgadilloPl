@@ -75,13 +75,13 @@ const Bracket = (() => {
         *,
         participant1:tournament_participants!matches_participant1_id_fkey(
           id, display_name, player1_id, player2_id,
-          player1:players!tournament_participants_player1_id_fkey(name, nickname, teams(name,color)),
-          player2:players!tournament_participants_player2_id_fkey(name, nickname, teams(name,color))
+          player1:players!tournament_participants_player1_id_fkey(name, nickname, teams(name,color,logo_url)),
+          player2:players!tournament_participants_player2_id_fkey(name, nickname, teams(name,color,logo_url))
         ),
         participant2:tournament_participants!matches_participant2_id_fkey(
           id, display_name, player1_id, player2_id,
-          player1:players!tournament_participants_player1_id_fkey(name, nickname, teams(name,color)),
-          player2:players!tournament_participants_player2_id_fkey(name, nickname, teams(name,color))
+          player1:players!tournament_participants_player1_id_fkey(name, nickname, teams(name,color,logo_url)),
+          player2:players!tournament_participants_player2_id_fkey(name, nickname, teams(name,color,logo_url))
         ),
         winner:tournament_participants!matches_winner_id_fkey(id, display_name,
           player1:players!tournament_participants_player1_id_fkey(name, nickname)
@@ -135,14 +135,24 @@ const Bracket = (() => {
         const reingClass = m.match_type === 'reingress_match' ? 'reingress' : '';
         const byeClass = m.match_type === 'bye' ? 'bye' : '';
 
+        const p1TeamHtml = p1Team
+          ? (p1Team.logo_url
+            ? `<img src="${p1Team.logo_url}" style="height:14px; width:auto; object-fit:contain; flex-shrink:0;">`
+            : `<span class="team-dot" style="background:${p1Team.color}"></span>`)
+          : '';
+        const p2TeamHtml = p2Team
+          ? (p2Team.logo_url
+            ? `<img src="${p2Team.logo_url}" style="height:14px; width:auto; object-fit:contain; flex-shrink:0;">`
+            : `<span class="team-dot" style="background:${p2Team.color}"></span>`)
+          : '';
         html += `
           <div class="bracket-match">
             <div class="bracket-participant ${p1Class} ${reingClass}">
-              ${p1Team ? `<span class="team-dot" style="background:${p1Team.color}"></span>` : ''}
+              ${p1TeamHtml}
               <span>${p1Name}</span>
             </div>
             <div class="bracket-participant ${p2Class} ${byeClass} ${reingClass}">
-              ${p2Team ? `<span class="team-dot" style="background:${p2Team.color}"></span>` : ''}
+              ${p2TeamHtml}
               <span>${p2Name}</span>
             </div>
           </div>`;
