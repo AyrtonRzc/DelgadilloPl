@@ -1,0 +1,55 @@
+#roulette-canvas {
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--color-border), 0 0 32px rgba(99,102,241,0.3);
+  display: block;
+}
+
+.roulette-pointer {
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 24px solid var(--color-accent);
+  margin: 0 auto -8px;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.roulette-candidate-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.roulette-candidate-chip.rejected {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.roulette-candidates-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.roulette-timer-bar {
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.roulette-timer-bar-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 2px;
+  transition: width 1s linear;
+}

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pool Torneos — Club Delgadillo</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <img src="assets/icons/logo.png" alt="Club Delgadillo" class="topbar-logo">
+    <div class="topbar-actions">
+      <button class="btn-icon" id="btn-logout" title="Cerrar sesión" style="font-size:1.1rem;">↪</button>
+    </div>
+  </header>
+
+  <!-- AUTH SCREEN -->
+  <div id="screen-auth" class="main-content">
+    <div class="login-hero">
+      <img src="assets/icons/logo.png" alt="Club Delgadillo" class="login-hero-logo">
+      <div class="login-hero-title"><span class="gold">POOL</span> TORNEOS</div>
+      <div class="login-hero-sub">Organiza tu liga. Domina la mesa.</div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="login">Entrar</button>
+        <button class="tab-btn" data-tab="register">Registrarse</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="tab-login">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="login-email" placeholder="tu@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-input" id="login-password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="login-error" class="form-error hidden"></div>
+        <button class="btn btn-primary mt-4" id="btn-login">ENTRAR</button>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="tab-register" class="hidden">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" class="form-input" id="register-name" placeholder="Tu nombre">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="register-email" placeholder="tu@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" class="form-input" id="register-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div id="register-error" class="form-error hidden"></div>
+        <button class="btn btn-primary mt-4" id="btn-register">CREAR CUENTA</button>
+      </div>
+    </div>
+
+    <div class="divider-8">⑧</div>
+  </div>
+
+  <!-- MAIN SCREEN -->
+  <div id="screen-main" class="main-content hidden">
+
+    <!-- Sin organización -->
+    <div id="screen-no-org" class="hidden">
+      <div class="empty-state">
+        <div class="empty-state-icon">🏢</div>
+        <div class="empty-state-title">SIN ORGANIZACIÓN</div>
+        <div class="empty-state-desc">Crea tu grupo o únete a uno existente</div>
+      </div>
+      <div class="list mt-4">
+        <button class="btn btn-primary" id="btn-create-org">+ CREAR ORGANIZACIÓN</button>
+        <button class="btn btn-ghost" id="btn-join-org">Unirme con código</button>
+      </div>
+    </div>
+
+    <!-- Con organización -->
+    <div id="screen-org" class="hidden">
+
+      <div class="form-group">
+        <select class="form-select" id="select-org" style="font-family: var(--font-display); letter-spacing:0.04em;"></select>
+      </div>
+
+      <!-- Banner torneo activo -->
+      <div id="active-tournament-banner" class="hidden" style="margin-bottom: 1rem;">
+        <div class="card-gold">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span class="badge badge-status-active">● EN CURSO</span>
+            <span class="text-muted" style="font-size:0.75rem;" id="active-tournament-round"></span>
+          </div>
+          <div style="font-family:var(--font-display); font-size:1.25rem; font-weight:600; letter-spacing:0.04em; margin-bottom:0.75rem;" id="active-tournament-name"></div>
+          <div class="prize-banner" style="margin-bottom:0.75rem;">
+            <div class="prize-amount" id="active-tournament-prize"></div>
+            <div class="prize-label">Bote acumulado</div>
+          </div>
+          <a class="btn btn-primary" id="btn-go-active-tournament">IR AL TORNEO →</a>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="torneos">Torneos</button>
+        <button class="tab-btn" data-tab="directorio">Directorio</button>
+        <button class="tab-btn" data-tab="stats">Stats</button>
+      </div>
+
+      <!-- Tab: Torneos -->
+      <div id="tab-torneos">
+        <button class="btn btn-accent" id="btn-new-tournament" style="margin-bottom:1rem;">+ NUEVO TORNEO</button>
+        <div id="tournaments-list" class="list"></div>
+      </div>
+
+      <!-- Tab: Directorio -->
+      <div id="tab-directorio" class="hidden">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn btn-primary" id="btn-new-player" style="flex:1;">+ Jugador</button>
+          <button class="btn btn-ghost" id="btn-new-team" style="flex:1;">+ Team</button>
+        </div>
+        <div class="tabs" style="margin-bottom:1rem;">
+          <button class="tab-btn active" data-subtab="jugadores">Jugadores</button>
+          <button class="tab-btn" data-subtab="teams">Teams</button>
+        </div>
+        <div id="subtab-jugadores">
+          <div id="players-list" class="list"></div>
+        </div>
+        <div id="subtab-teams" class="hidden">
+          <div id="teams-list" class="list"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Stats -->
+      <div id="tab-stats" class="hidden">
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">PRÓXIMAMENTE</div>
+          <div class="empty-state-desc">Las stats aparecerán cuando terminen torneos</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Crear organización -->
+<div class="modal-backdrop" id="modal-create-org">
+  <div class="modal">
+    <div class="modal-title">Nueva organización</div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-input" id="org-name" placeholder="Club Delgadillo">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Slug (URL amigable)</label>
+      <input type="text" class="form-input" id="org-slug" placeholder="club-delgadillo">
+      <div class="form-hint">Solo letras, números y guiones</div>
+    </div>
+    <div id="create-org-error" class="form-error hidden"></div>
+    <button class="btn btn-primary" id="btn-confirm-create-org">CREAR</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-create-org">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: Unirse -->
+<div class="modal-backdrop" id="modal-join-org">
+  <div class="modal">
+    <div class="modal-title">Unirme a organización</div>
+    <div class="alert alert-info" style="margin-bottom:1rem;">
+      Pide al dueño que te invite desde su panel de miembros.
+    </div>
+    <button class="btn btn-ghost" data-close-modal="modal-join-org">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo jugador -->
+<div class="modal-backdrop" id="modal-new-player">
+  <div class="modal">
+    <div class="modal-title" id="modal-player-title">Nuevo jugador</div>
+    <input type="hidden" id="edit-player-id">
+    <div class="form-group">
+      <label class="form-label">Nombre completo</label>
+      <input type="text" class="form-input" id="player-name" placeholder="Juan López">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Apodo (opcional)</label>
+      <input type="text" class="form-input" id="player-nickname" placeholder="El Tiburón">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Team (opcional)</label>
+      <select class="form-select" id="player-team">
+        <option value="">Sin team</option>
+      </select>
+    </div>
+    <div id="player-error" class="form-error hidden"></div>
+    <button class="btn btn-primary" id="btn-confirm-player">GUARDAR</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-new-player">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo team -->
+<div class="modal-backdrop" id="modal-new-team">
+  <div class="modal">
+    <div class="modal-title" id="modal-team-title">Nuevo team</div>
+    <input type="hidden" id="edit-team-id">
+    <div class="form-group">
+      <label class="form-label">Nombre del team</label>
+      <input type="text" class="form-input" id="team-name" placeholder="Los Pulpos">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <input type="color" class="form-input" id="team-color" value="#6366f1" style="height:52px; padding:4px 8px; cursor:pointer;">
+    </div>
+    <div id="team-error" class="form-error hidden"></div>
+    <button class="btn btn-primary" id="btn-confirm-team">GUARDAR</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-new-team">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo torneo -->
+<div class="modal-backdrop" id="modal-new-tournament">
+  <div class="modal">
+    <div class="modal-title">Nuevo torneo</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del torneo</label>
+      <input type="text" class="form-input" id="t-name" placeholder="Torneo Viernes #1">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Modo de juego</label>
+        <select class="form-select" id="t-game-mode"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Formato</label>
+        <select class="form-select" id="t-mode-type">
+          <option value="single">Individual</option>
+          <option value="doubles">Parejas</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lugar</label>
+      <select class="form-select" id="t-venue">
+        <option value="">Sin lugar especificado</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Entrada ($)</label>
+        <input type="number" class="form-input" id="t-entry-fee" placeholder="50" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Moneda</label>
+        <select class="form-select" id="t-currency">
+          <option value="MXN">MXN</option>
+          <option value="USD">USD</option>
+          <option value="ARS">ARS</option>
+          <option value="COP">COP</option>
+        </select>
+      </div>
+    </div>
+    <div id="tournament-error" class="form-error hidden"></div>
+    <button class="btn btn-accent" id="btn-confirm-tournament">CREAR TORNEO</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-new-tournament">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/utils/toast.js"></script>
+<script src="js/utils/modal.js"></script>
+<script src="js/utils/format.js"></script>
+<script src="js/state/store.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/org.js"></script>
+<script src="js/directory.js"></script>
+<script src="js/tournaments-list.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

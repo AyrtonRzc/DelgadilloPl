@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\")",
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js\")",
+      "Bash(node -e \":*)"
+    ]
+  }
+}
