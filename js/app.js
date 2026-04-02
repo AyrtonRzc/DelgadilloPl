@@ -80,8 +80,9 @@ const App = (() => {
         });
         if (tabMap[tab]) document.getElementById(tabMap[tab])?.classList.remove('hidden');
 
-        // Cargar datos al entrar a la pestaña Miembros
+        // Cargar datos al entrar a ciertas pestañas
         if (tab === 'miembros') renderMembersList();
+        if (tab === 'stats') Stats.render();
       });
     });
   }

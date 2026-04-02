@@ -425,6 +425,25 @@ const TournamentPage = (() => {
     openModal('modal-share-links');
   }
 
+  function setupRealtime(tournamentId) {
+    let reloadTimer = null;
+    const scheduleReload = () => {
+      clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => reload(), 400);
+    };
+
+    db.channel(`tournament-${tournamentId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches',
+          filter: `tournament_id=eq.${tournamentId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments',
+          filter: `id=eq.${tournamentId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_participants',
+          filter: `tournament_id=eq.${tournamentId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prize_pool_transactions',
+          filter: `tournament_id=eq.${tournamentId}` }, scheduleReload)
+      .subscribe();
+  }
+
   function initEvents() {
     document.getElementById('btn-start-roulette')?.addEventListener('click', function() {
       withLoading(this, openRouletteForCurrentRound);
@@ -454,6 +473,7 @@ const TournamentPage = (() => {
 
     try {
       await reload();
+      setupRealtime(id);
 
       // Si está en setup, mostrar botón de iniciar
       if (state.tournament?.status === 'setup') {

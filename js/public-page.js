@@ -245,6 +245,25 @@ const TournamentPage = (() => {
     ReingressManager.start(state.tournament, state.freeParticipant, losers);
   }
 
+  function setupRealtime(tournamentId) {
+    let reloadTimer = null;
+    const scheduleReload = () => {
+      clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => reload(), 400);
+    };
+
+    db.channel(`tournament-${tournamentId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches',
+          filter: `tournament_id=eq.${tournamentId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments',
+          filter: `id=eq.${tournamentId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_participants',
+          filter: `tournament_id=eq.${tournamentId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'prize_pool_transactions',
+          filter: `tournament_id=eq.${tournamentId}` }, scheduleReload)
+      .subscribe();
+  }
+
   function initTabs() {
     document.querySelectorAll('[data-tab]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -314,6 +333,7 @@ const TournamentPage = (() => {
     document.getElementById('screen-tournament').classList.remove('hidden');
 
     render();
+    setupRealtime(t.id);
   }
 
   return {

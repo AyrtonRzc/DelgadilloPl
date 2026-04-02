@@ -33,6 +33,11 @@ const TournamentsList = (() => {
     return data;
   }
 
+  function isAdmin() {
+    const { currentOrg } = Store.get();
+    return currentOrg?.role === 'admin' || currentOrg?.role === 'owner';
+  }
+
   function renderTournaments() {
     const container = document.getElementById('tournaments-list');
     if (!container) return;
@@ -48,27 +53,45 @@ const TournamentsList = (() => {
       return;
     }
 
+    const admin = isAdmin();
+
     container.innerHTML = tournaments.map(t => {
       const statusLabel = { setup: 'Configurando', active: 'En curso', finished: 'Finalizado' }[t.status] || t.status;
       const statusClass = { setup: 'badge-status-setup', active: 'badge-status-active', finished: 'badge-status-finished' }[t.status];
       const venue = t.venues?.name ? `📍 ${t.venues.name}` : '';
       const mode = t.game_modes?.name || '';
       return `
-        <a href="tournament.html?id=${t.id}" style="display:block; text-decoration:none;">
-          <div class="list-item" style="flex-direction:column; align-items:flex-start; gap:0.5rem;">
-            <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-              <div class="list-item-name">${t.name}</div>
+        <div class="list-item tournament-list-item" style="flex-direction:column; align-items:flex-start; gap:0.5rem; cursor:pointer;" data-tournament-id="${t.id}">
+          <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+            <div class="list-item-name">${t.name}</div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
               <span class="badge ${statusClass}">${statusLabel}</span>
+              ${admin ? `<button class="btn-icon btn-sm" data-delete-id="${t.id}" data-delete-name="${t.name.replace(/"/g,'&quot;')}" title="Eliminar torneo" style="color:var(--color-danger); border-color:rgba(248,113,113,0.3);">🗑</button>` : ''}
             </div>
-            <div style="display:flex; gap:0.75rem; font-size:0.75rem; color:var(--color-text-muted);">
-              ${mode ? `<span>🎱 ${mode}</span>` : ''}
-              ${venue ? `<span>${venue}</span>` : ''}
-              ${t.entry_fee > 0 ? `<span>💰 ${formatCurrency(t.prize_pool, t.currency)}</span>` : ''}
-            </div>
-            <div style="font-size:0.75rem; color:var(--color-text-dim);">${formatDate(t.created_at)}</div>
           </div>
-        </a>`;
+          <div style="display:flex; gap:0.75rem; font-size:0.75rem; color:var(--color-text-muted);">
+            ${mode ? `<span>🎱 ${mode}</span>` : ''}
+            ${venue ? `<span>${venue}</span>` : ''}
+            ${t.entry_fee > 0 ? `<span>💰 ${formatCurrency(t.prize_pool, t.currency)}</span>` : ''}
+          </div>
+          <div style="font-size:0.75rem; color:var(--color-text-dim);">${formatDate(t.created_at)}</div>
+        </div>`;
     }).join('');
+  }
+
+  async function deleteTournament(id) {
+    // Borrar en orden respetando dependencias entre tablas
+    await db.from('prize_pool_transactions').delete().eq('tournament_id', id);
+    await db.from('reingress_events').delete().eq('tournament_id', id);
+    await db.from('matches').delete().eq('tournament_id', id);
+    await db.from('tournament_participants').delete().eq('tournament_id', id);
+    const { error } = await db.from('tournaments').delete().eq('id', id);
+    if (error) throw error;
+
+    const { currentOrg } = Store.get();
+    await Org.loadTournaments(currentOrg.id);
+    renderTournaments();
+    renderActiveTournamentBanner();
   }
 
   function renderActiveTournamentBanner() {
@@ -104,6 +127,35 @@ const TournamentsList = (() => {
   }
 
   function initEvents() {
+    // Navegación y borrado en la lista de torneos
+    document.getElementById('tournaments-list')?.addEventListener('click', (e) => {
+      // Botón borrar
+      const delBtn = e.target.closest('[data-delete-id]');
+      if (delBtn) {
+        e.stopPropagation();
+        const id   = delBtn.dataset.deleteId;
+        const name = delBtn.dataset.deleteName;
+        document.getElementById('confirm-delete-name').textContent = name;
+        document.getElementById('btn-confirm-delete').onclick = async () => {
+          closeModal('modal-confirm-delete');
+          try {
+            await deleteTournament(id);
+            showToast('Torneo eliminado', 'success');
+          } catch (err) {
+            showToast(err.message || 'Error al eliminar', 'error');
+          }
+        };
+        openModal('modal-confirm-delete');
+        return;
+      }
+
+      // Navegar al torneo al hacer click en la tarjeta
+      const card = e.target.closest('.tournament-list-item');
+      if (card?.dataset.tournamentId) {
+        window.location.href = `tournament.html?id=${card.dataset.tournamentId}`;
+      }
+    });
+
     document.getElementById('btn-new-tournament')?.addEventListener('click', () => {
       populateGameModeSelect();
       populateVenueSelect();
