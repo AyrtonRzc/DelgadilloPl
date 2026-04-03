@@ -95,7 +95,9 @@ const TournamentPage = (() => {
 
     state.freeParticipant = null;
 
-    if (t.status === 'finished') {
+    if (t.status === 'finished' || t.status === 'cancelled') {
+      document.getElementById('round-title').textContent =
+        t.status === 'cancelled' ? 'Torneo cancelado' : 'Torneo finalizado';
       Match.renderCurrentRound(state.matches, round, null);
       return;
     }
@@ -444,6 +446,138 @@ const TournamentPage = (() => {
       .subscribe();
   }
 
+  // ── RESETEAR RONDA ───────────────────────────────────
+
+  function openResetModal() {
+    // Usar el máximo round real en los matches, no solo current_round
+    // (por si current_round quedó desincronizado con los datos reales)
+    const maxRound = state.matches.length
+      ? Math.max(...state.matches.map(m => m.round))
+      : state.tournament.current_round;
+
+    const sel = document.getElementById('reset-round-select');
+    sel.innerHTML = '';
+    for (let r = maxRound; r >= 1; r--) {
+      const opt = document.createElement('option');
+      opt.value = r;
+      opt.textContent = r === 1
+        ? `Ronda 1 en adelante (borra todos los partidos)`
+        : `Ronda ${r} en adelante (quedan rondas 1–${r - 1})`;
+      sel.appendChild(opt);
+    }
+
+    closeModal('modal-admin-tools');
+    openModal('modal-reset-round');
+  }
+
+  async function resetToRound(deleteFromRound) {
+    const t  = state.tournament;
+    const id = t.id;
+
+    // Obtener IDs de eventos de reingreso afectados
+    const { data: events } = await db.from('reingress_events')
+      .select('id')
+      .eq('tournament_id', id)
+      .gte('round', deleteFromRound);
+    const eventIds = (events || []).map(e => e.id);
+
+    if (eventIds.length) {
+      // 1. Borrar intentos de ruleta (FK → reingress_events)
+      await db.from('reingress_attempts').delete().in('reingress_event_id', eventIds);
+
+      // 2. Borrar transacciones de reingreso (FK → reingress_events)
+      await db.from('prize_pool_transactions').delete().in('reingress_event_id', eventIds);
+
+      // 3. Nullear resulting_match_id para romper la FK hacia matches
+      await db.from('reingress_events')
+        .update({ resulting_match_id: null })
+        .eq('tournament_id', id).gte('round', deleteFromRound);
+
+      // 4. Borrar reingress_events
+      await db.from('reingress_events').delete()
+        .eq('tournament_id', id).gte('round', deleteFromRound);
+    }
+
+    // 5. Borrar partidos de las rondas afectadas
+    await db.from('matches').delete()
+      .eq('tournament_id', id).gte('round', deleteFromRound);
+
+    // 6. Resetear todos los participantes a 'active'
+    await db.from('tournament_participants').update({ status: 'active' })
+      .eq('tournament_id', id);
+
+    // 7. Re-eliminar a quienes perdieron en las rondas que SÍ quedan
+    const { data: remaining } = await db.from('matches')
+      .select('loser_id')
+      .eq('tournament_id', id)
+      .eq('status', 'completed')
+      .not('loser_id', 'is', null);
+
+    const loserIds = [...new Set((remaining || []).map(m => m.loser_id))];
+    for (const lid of loserIds) {
+      await db.from('tournament_participants').update({ status: 'eliminated' }).eq('id', lid);
+    }
+
+    // 8. Recalcular bote (se borraron transacciones de reingreso)
+    if (eventIds.length) await Prize.updatePrizePool(id);
+
+    // 9. Actualizar ronda actual (mínimo 1)
+    const newRound = Math.max(1, deleteFromRound - 1);
+    await db.from('tournaments').update({ current_round: newRound }).eq('id', id);
+
+    await reload();
+    showToast(
+      deleteFromRound === 1
+        ? 'Todos los partidos borrados — ronda 1 limpia'
+        : `Torneo reseteado a ronda ${newRound}`,
+      'success'
+    );
+  }
+
+  // ── CANCELAR TORNEO ──────────────────────────────────
+
+  async function cancelTournament() {
+    const t = state.tournament;
+    await db.from('tournaments').update({ status: 'cancelled' }).eq('id', t.id);
+
+    await reload();
+    showToast('Torneo cancelado — los partidos quedan en stats', 'success');
+  }
+
+  // ── MENÚ ADMIN ───────────────────────────────────────
+
+  function initAdminMenu() {
+    document.getElementById('btn-tournament-menu')?.addEventListener('click', () => {
+      openModal('modal-admin-tools');
+    });
+
+    document.getElementById('btn-tool-share')?.addEventListener('click', async function() {
+      closeModal('modal-admin-tools');
+      await ensureTokens();
+      openShareLinksModal();
+    });
+
+    document.getElementById('btn-tool-reset')?.addEventListener('click', () => {
+      openResetModal();
+    });
+
+    document.getElementById('btn-tool-cancel')?.addEventListener('click', () => {
+      closeModal('modal-admin-tools');
+      openModal('modal-cancel-tournament');
+    });
+
+    document.getElementById('btn-confirm-reset-round')?.addEventListener('click', function() {
+      const round = parseInt(document.getElementById('reset-round-select').value);
+      closeModal('modal-reset-round');
+      withLoading(this, () => resetToRound(round));
+    });
+
+    document.getElementById('btn-confirm-cancel-tournament')?.addEventListener('click', function() {
+      closeModal('modal-cancel-tournament');
+      withLoading(this, cancelTournament);
+    });
+  }
+
   function initEvents() {
     document.getElementById('btn-start-roulette')?.addEventListener('click', function() {
       withLoading(this, openRouletteForCurrentRound);
@@ -455,10 +589,7 @@ const TournamentPage = (() => {
       withLoading(this, openFinishModal);
     });
 
-    document.getElementById('btn-tournament-menu')?.addEventListener('click', async function() {
-      await ensureTokens();
-      openShareLinksModal();
-    });
+    initAdminMenu();
   }
 
   async function init() {

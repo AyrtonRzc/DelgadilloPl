@@ -204,13 +204,37 @@ const Org = (() => {
     const org = Store.get().currentOrg;
     if (!org) return [];
 
-    const { data, error } = await db
+    const { data: members, error } = await db
       .from('organization_members')
-      .select('user_id, role, created_at')
+      .select('user_id, role')
       .eq('org_id', org.id);
 
-    if (error) return [];
-    return data || [];
+    if (error) { console.error('loadMembers error:', error); return []; }
+    if (!members?.length) return [];
+
+    const userIds = members.map(m => m.user_id);
+    const { data: profiles } = await db
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', userIds);
+
+    const profileMap = {};
+    (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+    return members.map(m => ({ ...m, profiles: profileMap[m.user_id] || null }));
+  }
+
+  async function changeMemberRole(userId, newRole) {
+    const org = Store.get().currentOrg;
+    if (!org) throw new Error('Sin organización');
+
+    const { error } = await db
+      .from('organization_members')
+      .update({ role: newRole })
+      .eq('org_id', org.id)
+      .eq('user_id', userId);
+
+    if (error) throw error;
   }
 
   return {
@@ -228,6 +252,7 @@ const Org = (() => {
     loadInviteCodes,
     deleteInviteCode,
     joinByCode,
-    loadMembers
+    loadMembers,
+    changeMemberRole
   };
 })();

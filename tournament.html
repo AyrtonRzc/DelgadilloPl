@@ -237,6 +237,65 @@
   </div>
 </div>
 
+<!-- MODAL: Menú de herramientas admin -->
+<div class="modal-backdrop" id="modal-admin-tools">
+  <div class="modal">
+    <div class="modal-title">⚙️ Herramientas</div>
+    <div class="list" style="margin-bottom:1rem;">
+      <button class="list-item" id="btn-tool-share" style="cursor:pointer; width:100%; text-align:left; background:none; border:none;">
+        <span style="font-size:1.25rem; flex-shrink:0;">🔗</span>
+        <div class="list-item-info">
+          <div class="list-item-name">Compartir torneo</div>
+          <div class="list-item-sub">Links de vista y operador</div>
+        </div>
+      </button>
+      <button class="list-item" id="btn-tool-reset" style="cursor:pointer; width:100%; text-align:left; background:none; border:none;">
+        <span style="font-size:1.25rem; flex-shrink:0;">⏪</span>
+        <div class="list-item-info">
+          <div class="list-item-name">Resetear ronda</div>
+          <div class="list-item-sub">Borra partidos de una ronda en adelante</div>
+        </div>
+      </button>
+      <button class="list-item" id="btn-tool-cancel" style="cursor:pointer; width:100%; text-align:left; background:none; border:none;">
+        <span style="font-size:1.25rem; flex-shrink:0;">🚫</span>
+        <div class="list-item-info">
+          <div class="list-item-name" style="color:var(--color-danger);">Cancelar torneo</div>
+          <div class="list-item-sub">Los partidos jugados quedan en las stats</div>
+        </div>
+      </button>
+    </div>
+    <button class="btn btn-ghost" data-close-modal="modal-admin-tools">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL: Resetear ronda -->
+<div class="modal-backdrop" id="modal-reset-round">
+  <div class="modal">
+    <div class="modal-title">⏪ Resetear ronda</div>
+    <div class="alert alert-warning" style="margin-bottom:1rem; font-size:0.875rem; line-height:1.5;">
+      Se borrarán los partidos de la ronda seleccionada en adelante. Los partidos anteriores quedan intactos y cuentan en las stats.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Borrar desde la ronda...</label>
+      <select class="form-select" id="reset-round-select"></select>
+    </div>
+    <button class="btn btn-danger" id="btn-confirm-reset-round">BORRAR Y RESETEAR</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-reset-round">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: Confirmar cancelar torneo -->
+<div class="modal-backdrop" id="modal-cancel-tournament">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--color-danger);">🚫 Cancelar torneo</div>
+    <p style="font-size:0.875rem; color:var(--color-text-muted); margin-bottom:1rem; line-height:1.5;">
+      El torneo quedará como <strong style="color:var(--color-text);">cancelado</strong>. No habrá campeón pero todos los partidos que ya se jugaron seguirán contando en las estadísticas.
+    </p>
+    <button class="btn btn-danger" id="btn-confirm-cancel-tournament">CANCELAR TORNEO</button>
+    <button class="btn btn-ghost mt-2" data-close-modal="modal-cancel-tournament">Volver</button>
+  </div>
+</div>
+
 <!-- MODAL: Compartir torneo -->
 <div class="modal-backdrop" id="modal-share-links">
   <div class="modal">

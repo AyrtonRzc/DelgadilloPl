@@ -180,9 +180,9 @@ const Stats = (() => {
   }
 
   function renderSummary(orgStats, playerStats) {
-    const mostActive = [...playerStats].sort((a, b) => b.played - a.played)[0];
-    const mostWins   = playerStats.find(s => s.wins > 0);
-    const hlName     = s => s.player.nickname ? `"${s.player.nickname}"` : s.player.name;
+    const mostMatchWins = [...playerStats].sort((a, b) => b.matchWins - a.matchWins)[0];
+    const mostWins      = playerStats.find(s => s.wins > 0);
+    const hlName        = s => s.player.nickname ? `"${s.player.nickname}"` : s.player.name;
 
     return `
       <div class="stats-section">
@@ -205,19 +205,19 @@ const Stats = (() => {
             <div class="stat-card-label">Total gestionado</div>
           </div>
         </div>
-        ${mostActive || mostWins ? `
+        ${mostMatchWins || mostWins ? `
           <div class="stats-highlights">
-            ${mostActive ? `
+            ${mostMatchWins?.matchWins > 0 ? `
               <div class="stats-highlight">
-                <div class="stats-hl-label">Más activo</div>
-                <div class="stats-hl-name">${hlName(mostActive)}</div>
-                <div class="stats-hl-sub">${mostActive.played} ${mostActive.played === 1 ? 'torneo' : 'torneos'}</div>
+                <div class="stats-hl-label">Más victorias</div>
+                <div class="stats-hl-name">${hlName(mostMatchWins)}</div>
+                <div class="stats-hl-sub">${mostMatchWins.matchWins} ${mostMatchWins.matchWins === 1 ? 'partido ganado' : 'partidos ganados'}</div>
               </div>` : ''}
             ${mostWins ? `
               <div class="stats-highlight stats-highlight--gold">
-                <div class="stats-hl-label">Más campeón</div>
+                <div class="stats-hl-label">Rey de la mesa</div>
                 <div class="stats-hl-name">${hlName(mostWins)}</div>
-                <div class="stats-hl-sub">${'🏆'.repeat(Math.min(mostWins.wins, 5))} × ${mostWins.wins}</div>
+                <div class="stats-hl-sub">${'🏆'.repeat(Math.min(mostWins.wins, 5))} ${mostWins.wins} ${mostWins.wins === 1 ? 'título' : 'títulos'}</div>
               </div>` : ''}
           </div>` : ''}
       </div>`;
@@ -257,7 +257,7 @@ const Stats = (() => {
   }
 
   function renderHistory(tournaments, participants, transactions, players) {
-    const finished = tournaments.filter(t => t.status === 'finished');
+    const finished = tournaments.filter(t => t.status === 'finished' || t.status === 'cancelled');
     if (!finished.length) return '';
 
     return `
@@ -271,21 +271,24 @@ const Stats = (() => {
                 (tx.transaction_type === 'entry' || tx.transaction_type === 'reentry'))
               .reduce((sum, tx) => sum + tx.amount, 0);
 
-            const winner = tParts.find(p => p.id === t.winner_participant_id);
-            let winnerName = winner?.display_name;
-            if (!winnerName && winner?.player1_id) {
-              const pl = players.find(p => p.id === winner.player1_id);
-              winnerName = pl?.nickname || pl?.name;
+            let sub;
+            if (t.status === 'cancelled') {
+              sub = `🚫 Cancelado · ${tParts.length} participantes`;
+            } else {
+              const winner = tParts.find(p => p.id === t.winner_participant_id);
+              let winnerName = winner?.display_name;
+              if (!winnerName && winner?.player1_id) {
+                const pl = players.find(p => p.id === winner.player1_id);
+                winnerName = pl?.nickname || pl?.name;
+              }
+              sub = `🏆 ${winnerName || '?'} · ${tParts.length} participantes${bote > 0 ? ` · ${formatCurrency(bote)}` : ''}`;
             }
-            winnerName = winnerName || '?';
 
             return `
               <div class="list-item">
                 <div class="list-item-info">
-                  <div class="list-item-name">${t.name}</div>
-                  <div class="list-item-sub">
-                    🏆 ${winnerName} · ${tParts.length} participantes${bote > 0 ? ` · ${formatCurrency(bote)}` : ''}
-                  </div>
+                  <div class="list-item-name" style="${t.status === 'cancelled' ? 'color:var(--color-text-muted);' : ''}">${t.name}</div>
+                  <div class="list-item-sub">${sub}</div>
                 </div>
                 <span class="stats-date">${formatDate(t.created_at)}</span>
               </div>`;

@@ -66,7 +66,7 @@ const TournamentsList = (() => {
             <div class="list-item-name">${t.name}</div>
             <div style="display:flex; align-items:center; gap:0.5rem;">
               <span class="badge ${statusClass}">${statusLabel}</span>
-              ${admin ? `<button class="btn-icon btn-sm" data-delete-id="${t.id}" data-delete-name="${t.name.replace(/"/g,'&quot;')}" title="Eliminar torneo" style="color:var(--color-danger); border-color:rgba(248,113,113,0.3);">🗑</button>` : ''}
+              ${false && admin ? `<button class="btn-icon btn-sm" data-delete-id="${t.id}" data-delete-name="${t.name.replace(/"/g,'&quot;')}" title="Eliminar torneo" style="color:var(--color-danger); border-color:rgba(248,113,113,0.3);">🗑</button>` : ''}
             </div>
           </div>
           <div style="display:flex; gap:0.75rem; font-size:0.75rem; color:var(--color-text-muted);">

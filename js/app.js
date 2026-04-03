@@ -225,21 +225,59 @@ const App = (() => {
         </div>`;
       return;
     }
+    const { currentOrg } = Store.get();
+    const myId    = Auth.currentUser()?.id;
+    const isAdmin = currentOrg?.role === 'admin' || currentOrg?.role === 'owner';
+
     container.innerHTML = members.map(m => {
-      const roleLabel = { owner: '👑 Dueño', admin: '⚙️ Admin', member: '👤 Miembro' }[m.role] || m.role;
-      const date = new Date(m.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+      const roleLabel  = { owner: '👑 Dueño', admin: '⚙️ Admin', member: '👤 Miembro' }[m.role] || m.role;
+      const canChange  = isAdmin && m.role !== 'owner' && m.user_id !== myId;
+      const displayName = m.profiles?.full_name || m.profiles?.username || m.user_id.slice(0, 8) + '…';
+      const username    = m.profiles?.username ? `@${m.profiles.username}` : '';
+
       return `
         <div class="list-item">
           <div class="list-item-info">
-            <div class="list-item-name" style="font-size:0.8125rem; color:var(--color-text-dim);">${m.user_id.slice(0, 8)}…</div>
-            <div class="list-item-sub">${roleLabel} · Desde ${date}</div>
+            <div class="list-item-name">${displayName}</div>
+            <div class="list-item-sub">${roleLabel}${username ? ` · ${username}` : ''}</div>
           </div>
+          ${canChange ? `
+            <button class="btn-icon btn-sm"
+              data-change-role-uid="${m.user_id}"
+              data-change-role-current="${m.role}"
+              title="${m.role === 'admin' ? 'Quitar admin' : 'Hacer admin'}"
+              style="font-size:0.7rem; color:${m.role === 'admin' ? 'var(--color-danger)' : 'var(--color-gold)'}; border-color:${m.role === 'admin' ? 'rgba(248,113,113,0.3)' : 'var(--color-gold-border)'}; white-space:nowrap; padding:0 0.5rem; min-height:32px;">
+              ${m.role === 'admin' ? '− Admin' : '+ Admin'}
+            </button>` : ''}
         </div>`;
     }).join('');
   }
 
   function initMembersTab() {
     initMemberTabs();
+
+    // Cambio de rol desde la lista de miembros
+    document.getElementById('members-list')?.addEventListener('click', async e => {
+      const btn = e.target.closest('[data-change-role-uid]');
+      if (!btn || btn.disabled) return;
+
+      const uid     = btn.dataset.changeRoleUid;
+      const current = btn.dataset.changeRoleCurrent;
+      const newRole = current === 'admin' ? 'member' : 'admin';
+      const label   = newRole === 'admin' ? 'hacer admin' : 'quitar admin';
+
+      if (!confirm(`¿Seguro que quieres ${label} a este miembro?`)) return;
+
+      btn.disabled = true;
+      try {
+        await Org.changeMemberRole(uid, newRole);
+        showToast(`Rol actualizado a ${newRole}`, 'success');
+        await renderMembersList();
+      } catch (err) {
+        showToast(err.message || 'Error al cambiar rol', 'error');
+        btn.disabled = false;
+      }
+    });
 
     document.getElementById('btn-create-member')?.addEventListener('click', function() {
       const username = document.getElementById('member-username').value.trim();
