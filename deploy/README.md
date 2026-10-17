@@ -11,6 +11,7 @@ This configuration is **a private static preview only**, not a functioning tourn
 - Container logs are capped at two 2 MiB files.
 - No mounted databases, Docker volume, local build cache, anonymous registry, app writes or internet-exposed ports.
 - Does not run privileged or join the ERP edge network.
+- The official Caddy binary carries a `NET_BIND_SERVICE` file capability. Compose drops all capabilities and adds back **only** that one to avoid `exec caddy failed: Operation not permitted`; user remains non-root and `no-new-privileges` stays enabled.
 
 ## Initial installation on HostGator VPS (as deploy-erp)
 
